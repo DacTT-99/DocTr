@@ -1,0 +1,4 @@
+__pycache__/
+model_pretrained/*.pth
+*.zip
+.ideal/
