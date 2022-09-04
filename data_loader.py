@@ -1,36 +1,103 @@
 import os
 
+import cv2
+import h5py
+import numpy as np
 import torch
+import torchvision.transforms as transforms
 from overrides import overrides
+from torch.utils import data
 from torch.utils.data import Dataset
 
 
-class Doc3D(Dataset):
-    def __init__(self,
-                 dataset_path: str = None,
-                 training: bool = False):
+class Doc3D_Seg(Dataset):
+    def __init__(self, dataset_path: str = None, training: bool = True):
         super().__init__()
         self.dataset_path = dataset_path
         self.training = training
+
+        self.samples = []
         self.process_sample()
 
     def process_sample(self):
-        img_dir_paths = os.listdir(os.path.join(self.dataset_path,'img'))   #home/list_99/Download/doc3d/img
-        bm_dir_paths = os.listdir(os.path.join(self.dataset_path,'bm'))     #home/list_99/Download/doc3d/bm
-        imgs_path = []
-        bms_path = []
-        sample = []
-        for dir_path in img_dir_paths:
-            img_sub_dir += os.listdir(os.path.join(self.dataset_path,dir_path)) # 1,2,3,4,5 ... 21
-            for img_path in imgs_path:
-                img_sub_dir_path = os.path.join(self.dataset_path,dir_path,img_sub_dir)           #home/list_99/Download/doc3d/img/1
-                bm_sub_dir_path = os.path.join(self.dataset_path,dir_path,img_sub_dir)           #home/list_99/Download/doc3d/bm/1
-        self.check_valid_sample(imgs_path)
-
-    def check_valid_sample(self, imgs_path: list):
-        for img_path in imgs_path:
-            bm_path = img.path
+        img_dir_path = os.path.join(self.dataset_path, "img")  # ./doc3d/img
+        if not os.path.exists(img_dir_path):
+            return
+        for img_sub_dir in os.listdir(img_dir_path):
+            img_sub_dir_path = os.path.join(img_dir_path, img_sub_dir)  # ./doc3d/img/1
+            img_names = os.listdir(img_sub_dir_path)
+            for img_name in img_names:
+                fn = img_name.split(".")[0]
+                img_path = os.path.join(self.dataset_path, "img", img_sub_dir, img_name)
+                #bm_path = os.path.join(self.dataset_path, "bm", img_sub_dir, fn + ".mat")
+                wc_path = os.path.join(self.dataset_path, "wc", img_sub_dir, fn + ".exr")
+                if os.path.exists(img_path) and os.path.exists(img_path) and os.path.exists(img_path):
+                    continue
+                self.samples.append([img_path, wc_path])
 
     @overrides
-    def __getitem__():
-        pass
+    def __getitem__(self,index):
+        img_path, wc_path = self.samples[index]
+        img = cv2.imread(img_path)
+
+        wc = cv2.imread(wc_path,  cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+        wc[wc!=0] = 1.0
+        wc = torch.Tensor(wc)
+
+        # bm = np.array(h5py.File(bm_path)['bm'])
+        # bm = torch.Tensor(bm)
+        transform = transforms.Compose([transforms.ToTensor(), \
+                                        transforms.Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5))])
+        return transform(img), wc
+
+    def __len__(self):
+        return len(self.samples)
+
+class Doc3D_Rectify(Dataset):
+    def __init__(self, dataset_path: str = None, training: bool = True):
+        super().__init__()
+        self.dataset_path = dataset_path
+        self.training = training
+
+        self.samples = []
+        self.process_sample()
+
+    # TODO: adding process image after segmentation
+    def process_sample(self):
+        img_dir_path = os.path.join(self.dataset_path, "img")  # ./doc3d/img
+        if not os.path.exists(img_dir_path):
+            return
+        for img_sub_dir in os.listdir(img_dir_path):
+            img_sub_dir_path = os.path.join(img_dir_path, img_sub_dir)  # ./doc3d/img/1
+            img_names = os.listdir(img_sub_dir_path)
+            for img_name in img_names:
+                fn = img_name.split(".")[0]
+                img_path = os.path.join(self.dataset_path, "img", img_sub_dir, img_name)
+                bm_path = os.path.join(self.dataset_path, "bm", img_sub_dir, fn + ".mat")
+                #wc_path = os.path.join(self.dataset_path, "wc", img_sub_dir, fn + ".exr")
+                if os.path.exists(img_path) and os.path.exists(img_path) and os.path.exists(img_path):
+                    continue
+                self.samples.append([img_path,bm_path])
+
+    @overrides
+    def __getitem__(self,index):
+        img_path, bm_path = self.samples[index]
+        img = cv2.imread(img_path)
+
+        # wc = cv2.imread(wc_path,  cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+        # wc[wc!=0] = 255
+        # wc = torch.Tensor(wc)
+
+        bm = np.array(h5py.File(bm_path)['bm'])
+        bm = torch.Tensor(bm)
+        transform = transforms.Compose([transforms.ToTensor(), \
+                                        transforms.Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5))])
+        return transform(img), bm
+
+    def __len__(self):
+        return len(self.samples)
+
+if __name__ =='__main__':
+    dataset = Doc3D_Seg('')
+    print(len(dataset))
+    train_loader = data.DataLoader(dataset, batch_size=16, shuffle=True, num_workers=1, drop_last=True)
