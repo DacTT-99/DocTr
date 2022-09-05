@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 def train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, interval):
     dataset = Doc3D_Rectify(dataset_path=train_img_path)
     file_num = len(dataset)
-    train_loader = data.DataLoader(dataset, batch_size=16, shuffle=True, num_workers=num_workers, drop_last=True)
+    train_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)
 
     Rectify_model = GeoTr(num_attn_layers=6)
     criterion = Rectification_loss()
@@ -51,11 +51,12 @@ def train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, in
             torch.save(state_dict, os.path.join(ckpt_path, 'rectify_model_epoch_{}.pth'.format(epoch+1)))
 
 if __name__ == '__main__':
-	train_img_path = ''
-	ckpt_path      = './rectify_ckpt'
-	batch_size     = 24 
-	lr             = 1e-3
-	num_workers    = 4
-	epoch_iter     = 600
-	save_interval  = 5
-	train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, save_interval)	
+    os.environ["OPENCV_IO_ENABLE_OPENEXR"]="1"
+    train_img_path = '/home/list_99/data/doc3D'
+    ckpt_path      = './rectify_ckpt'
+    batch_size     = 16
+    lr             = 1e-3
+    num_workers    = 4
+    epoch_iter     = 600
+    save_interval  = 5
+    train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, save_interval)	

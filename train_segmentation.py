@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 def train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, interval):
     dataset = Doc3D_Seg(dataset_path=train_img_path)
     file_num = len(dataset)
-    train_loader = data.DataLoader(dataset, batch_size=16, shuffle=True, num_workers=num_workers, drop_last=True)
+    train_loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)
     Seg_model = U2NETP(3, 1)
     criterion = Seg_loss()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -28,11 +28,11 @@ def train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, in
         scheduler.step()
         epoch_loss = 0
         epoch_time = time.time()
-        for i, (img, gt_score, gt_geo, ignored_map) in enumerate(train_loader):
+        for i, (img, wc) in enumerate(train_loader):
             start_time = time.time()
-            img, gt_score, gt_geo, ignored_map = img.to(device), gt_score.to(device), gt_geo.to(device), ignored_map.to(device)
-            pred_score, pred_geo = Seg_model(img)
-            loss = criterion(gt_score, pred_score, gt_geo, pred_geo, ignored_map)
+            img, wc = img.to(device), wc.to(device)
+            output = Seg_model(img)[0]
+            loss = criterion(output, wc)
             
             epoch_loss += loss.item()
             optimizer.zero_grad()
@@ -50,11 +50,12 @@ def train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, in
             torch.save(state_dict, os.path.join(ckpt_path, 'seg_model_epoch_{}.pth'.format(epoch+1)))
 
 if __name__ == '__main__':
-	train_img_path = ''
-	ckpt_path      = './seg_ckpt'
-	batch_size     = 24 
-	lr             = 1e-3
-	num_workers    = 4
-	epoch_iter     = 600
-	save_interval  = 5
-	train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, save_interval)	
+    os.environ["OPENCV_IO_ENABLE_OPENEXR"]="1"
+    train_img_path = '/home/list_99/data/doc3D'
+    ckpt_path      = './seg_ckpt'
+    batch_size     = 16
+    lr             = 1e-3
+    num_workers    = 4
+    epoch_iter     = 600
+    save_interval  = 5
+    train(train_img_path, ckpt_path, batch_size, lr, num_workers, epoch_iter, save_interval)	
