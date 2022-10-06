@@ -1,8 +1,3 @@
-**Good news! Our new work exhibits state-of-the-art performances on the [DocUNet Benchmark](https://www3.cs.stonybrook.edu/~cvl/docunet.html) dataset:
-[DocScanner: Robust Document Image Rectification with Progressive Learning](https://arxiv.org/pdf/2110.14968v2.pdf)** 
-
-**Good news! A comprehensive list of [awesome document image rectification](https://github.com/fh2019ustc/Awesome-Document-Image-Rectification) methods is available.** 
-
 # DocTr
 
 ![1](https://user-images.githubusercontent.com/50725551/144743905-2b81e3ab-f2f7-4eee-aa87-f37b740f6998.png)
